@@ -44,56 +44,55 @@ class LidarProtocol(asyncio.Protocol):
     def data_received(self, recv_data: bytes):           
         for c in recv_data:  
             try:         
-                match self.state:
-                    case 'IDLE':
-                        if c == 0x54:                    
-                            self.state = 'LENGTH'
-                    case 'LENGTH':
-                        ver_len = c
-                        self.length = ver_len & 0x1F
+                if self.state == 'IDLE':
+                    if c == 0x54:                    
+                        self.state = 'LENGTH'
+                elif self.state == 'LENGTH':
+                    ver_len = c
+                    self.length = ver_len & 0x1F
+                    self.buffer = b''
+                    self.state = 'DATA'
+                elif self.state == 'DATA':
+                    if len(self.buffer) == self.length * 3 + 8:
+                        speed, start = struct.unpack('<HH', self.buffer[0:4])
+                        data = np.zeros((self.length,2))
+                        for i in range(self.length):
+                            tmp = struct.unpack('<HB', self.buffer[4+i*3 : 4+i*3+3]) 
+                            data[i,:] = tmp              
+                        # stop, timestamp, sum = struct.unpack('<HHB', self.buffer[4+self.length*3 : 4+self.length*3+5])
+                        stop, timestamp = struct.unpack('<HH', self.buffer[4+self.length*3 : 4+self.length*3+4]) # seems this model have no checksum
                         self.buffer = b''
-                        self.state = 'DATA'
-                    case 'DATA':
-                        if len(self.buffer) == self.length * 3 + 8:
-                            speed, start = struct.unpack('<HH', self.buffer[0:4])
-                            data = np.zeros((self.length,2))
-                            for i in range(self.length):
-                                tmp = struct.unpack('<HB', self.buffer[4+i*3 : 4+i*3+3]) 
-                                data[i,:] = tmp              
-                            # stop, timestamp, sum = struct.unpack('<HHB', self.buffer[4+self.length*3 : 4+self.length*3+5])
-                            stop, timestamp = struct.unpack('<HH', self.buffer[4+self.length*3 : 4+self.length*3+4]) # seems this model have no checksum
-                            self.buffer = b''
-                            self.state = 'IDLE'
+                        self.state = 'IDLE'
 
-                            for (dist, intensity), angle in zip(data, np.linspace(m.pi*start/18000, m.pi*stop/18000, num=self.length)):
+                        for (dist, intensity), angle in zip(data, np.linspace(m.pi*start/18000, m.pi*stop/18000, num=self.length)):
 
-                                # filter big distance change - usually caused by lidar glichest
-                                if self.last_dist is None or abs(self.last_dist - dist) < self.max_distance:
-                                    self.last_dist = dist
-                                else:
-                                    self.last_dist = None
-                                    break
-                                
-                                # process only points in intensity and distance limit
+                            # filter big distance change - usually caused by lidar glichest
+                            if self.last_dist is None or abs(self.last_dist - dist) < self.max_distance:
+                                self.last_dist = dist
+                            else:
+                                self.last_dist = None
+                                break
+                            
+                            # process only points in intensity and distance limit
+                            if (
+                                0 < intensity < self.max_intensity
+                                and self.min_distance < dist < self.max_distance
+                            ):
+                                y = -dist*m.cos(angle) # marker up
+                                x = dist*m.sin(angle)
+                                # process only points in given area with given resolution
                                 if (
-                                    0 < intensity < self.max_intensity
-                                    and self.min_distance < dist < self.max_distance
+                                    self.x_min < x < self.x_max
+                                    and self.y_min < y < self.y_max
+                                    and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
                                 ):
-                                    y = -dist*m.cos(angle) # marker up
-                                    x = dist*m.sin(angle)
-                                    # process only points in given area with given resolution
-                                    if (
-                                        self.x_min < x < self.x_max
-                                        and self.y_min < y < self.y_max
-                                        and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
-                                    ):
-                                        self.last_pos = (x,y)
-                                        try:
-                                            self.queue.put_nowait((x,y))
-                                        except asyncio.QueueFull:
-                                            ...
-                        else:
-                            self.buffer += c.to_bytes(1)
+                                    self.last_pos = (x,y)
+                                    try:
+                                        self.queue.put_nowait((x,y))
+                                    except asyncio.QueueFull:
+                                        ...
+                    else:
+                        self.buffer += c.to_bytes(1)
             except Exception as e:
                 print(e)
 
