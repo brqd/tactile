@@ -92,7 +92,7 @@ class LidarProtocol(asyncio.Protocol):
                                     except asyncio.QueueFull:
                                         ...
                     else:
-                        self.buffer += c.to_bytes(1)
+                        self.buffer += c.to_bytes(1, 'little')
             except Exception as e:
                 print(e)
 
