@@ -39,7 +39,7 @@ class Background(DisplayObject):
 class Picture(DisplayObject):
     def __init__(self, disp: 'Display', image_name: str, x:int, y: int, width: int, height: int):
         self.obj = pygame.image.load(image_name)
-        self.obj = pygame.transform.scale(self.obj, (width, height))        
+        self.obj = pygame.transform.scale(self.obj, (int(width), int(height)))        
         self.rect = self.obj.get_rect()
         self.rect = self.rect.move(x,y)
         self.speed = [2, 2]
