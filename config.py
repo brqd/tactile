@@ -24,6 +24,7 @@ class Painting(BaseModel):
     height: float
 
 class Lidar(BaseModel):
+    port: str
     x: int
     y: int
 

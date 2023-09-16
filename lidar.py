@@ -98,7 +98,12 @@ class LidarProtocol(asyncio.Protocol):
                 print(e)
 
     async def read(self):
-        return await self.queue.get()
+        points = [await self.queue.get()]
+        while True:
+            try:
+                points += [self.queue.get_nowait()]
+            except asyncio.QueueEmpty:
+                return points
                     
 
 
@@ -137,7 +142,7 @@ async def configure(conf: config.Config, queue: asyncio.Queue, points: display.P
             conf.area_width-conf.lidar.x,
             conf.area_height-conf.lidar.y,
             350),
-        'COM5',
+        conf.lidar.port,
         baudrate=230400
     )                
 
@@ -146,39 +151,36 @@ _pos = (0,0)
 _last_pos = (0,0)
 _sensitivity = 10 # mm
 
-_points_size = 150
-_points = [((0,0),0)]
+_points_size = 50
+_points = [(0,0)] * _points_size
 _point_index = 0
 
 
 def add_point(pos):    
-    global _points
-    valid_time = 2 # sek
-    now = time.time()
-    points = filter(lambda pt: pt[1] + valid_time > now, _points)
-    
-    _points = list(points) + [(pos, now)]
+    global _points, _point_index
+    _points[_point_index] = pos
+    _point_index += 1
+    if _point_index == _points_size:
+        _point_index = 0
 
 def get_points() -> list[tuple[float, float]]:
-    if len(_points) > 5:
-        return [p[0] for p in _points]
-    else:
-        return [(0,0)]
+    return _points
 
 async def run():
     global _pos, _last_pos
     
     try:
         while True:
-            point = await _protocol.read()
-            point = (_lidar_pos[0] + point[0], _lidar_pos[1] + point [1])
+            current_point = await _protocol.read()
+            current_point = [(_lidar_pos[0] + point[0], _lidar_pos[1] + point [1]) for point in current_point]
 
-            # drawing
-            if _display_points is not None:
-                _display_points.add_point(point) 
+            for point in current_point:
+                add_point(point)
+                # drawing
+                if _display_points is not None:
+                    _display_points.add_point(point, (255,0,0))                 
 
-            add_point(point)
-            points = get_points()
+            points = get_points() # all
 
             # finding middle of hand
             mean = np.mean(points,0)
@@ -191,6 +193,10 @@ async def run():
             # finding middle of hand again
             mean = np.mean(points,0)
             std = np.std(points,0)
+
+            if _display_points is not None:
+                    for point in points:
+                        _display_points.add_point(point, (0,255,0))
             
             # finding end of hand            
             A = np.vstack([[p[1] for p in points], np.ones(len(points))]).T

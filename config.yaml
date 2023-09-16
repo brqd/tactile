@@ -8,7 +8,8 @@ area_height: 700 #mm
 # area_height: 300 #mm
 
 lidar:
-  x: 3170
+  port: COM5
+  x: 1535
   y: -100
   # x: 1200
   # y: 0  

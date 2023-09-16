@@ -94,9 +94,10 @@ class Hand(DisplayObject):
 class Points(DisplayObject):
     def __init__(self, game: 'Display', display_scale):
         self.game = game
-        self.point_size = 100       
+        self.point_size = 500       
         self.point_index = 0
         self.points: list[tuple(int, int)] = [(0,0)] * self.point_size
+        self.colors:  list[tuple(int, int, int)] = [(0,0,0)] * self.point_size
         self._display_scale = display_scale
 
     async def update(self):
@@ -104,18 +105,20 @@ class Points(DisplayObject):
 
 
     async def draw(self, screen: pygame.Surface):
-        for point in self.points:
-            pygame.display.get_surface().set_at((int(point[0]),int(point[1])), (200,200,255))
+        for point, color in zip(self.points, self.colors):
+            pygame.display.get_surface().set_at((int(point[0]),int(point[1])), color)
 
     async def handle_event(self, event):
         ...   
 
-    def add_point(self, pos):
+    def add_point(self, pos, color = (255,255,255)):
         scaled_pos = (int(pos[0]*self._display_scale), int(pos[1]*self._display_scale))
         self.points[self.point_index] = scaled_pos
+        self.colors[self.point_index] = color
         self.point_index += 1
         if self.point_index == self.point_size:
             self.point_index = 0
+       
 
 
 
