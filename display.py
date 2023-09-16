@@ -186,7 +186,7 @@ class Display:
         pygame.init() 
         try:
             pygame.display.set_caption("pygame+asyncio")
-            self._screen = pygame.display.set_mode((self.width, self.height)) # screen have to be created in the thread where events are collected
+            self._screen = pygame.display.set_mode((int(self.width), int(self.height))) # screen have to be created in the thread where events are collected
             ready.set()
             while not stop.is_set():          
                 event = pygame.event.wait(100) # check stop once a 0.1s
