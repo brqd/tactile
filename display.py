@@ -75,7 +75,7 @@ class Spot(DisplayObject):
 class Hand(DisplayObject):
     def __init__(self, game: 'Display', image_name: str, width: int, height: int):
         self.obj = pygame.image.load(image_name)
-        self.obj = pygame.transform.scale(self.obj, (width, height))
+        self.obj = pygame.transform.scale(self.obj, (int(width), int(height)))
         self.rect = self.obj.get_rect()
         self.game = game
 
