@@ -189,9 +189,11 @@ class Display:
             self._screen = pygame.display.set_mode((int(self.width), int(self.height))) # screen have to be created in the thread where events are collected
             ready.set()
             while not stop.is_set():          
-                event = pygame.event.wait(100) # check stop once a 0.1s
-                if event.type != pygame.NOEVENT:
-                    asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
+                # event = pygame.event.wait(100) # check stop once a 0.1s
+                # if event.type != pygame.NOEVENT:
+                #     asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
+                event = pygame.event.wait() # check stop once a 0.1s
+                asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)                
         finally:
             pygame.quit()
 
