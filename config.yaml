@@ -1,0 +1,106 @@
+bank_file: Master.bank
+bank_string_file: Master.strings.bank
+fmod_event: /move_hand
+display_scale: 0.6 #pixel/mm
+area_width: 3070 #mm
+area_height: 700 #mm
+# area_width: 1000 #mm
+# area_height: 300 #mm
+
+lidar:
+  x: 3170
+  y: -100
+  # x: 1200
+  # y: 0  
+
+paintings:
+  - image_file: painting1.jpg
+    x: 100
+    y: 150
+    width: 390 #mm
+    height: 390 #mm
+  - image_file: painting2.jpg
+    x: 590 # - 650 = 60
+    y: 0
+    width: 440 #mm
+    height: 700 #mm
+  - image_file: painting3.jpg
+    x: 1130 # - 1200 = 70
+    y: 190
+    width: 770 #mm
+    height: 300 #mm
+  - image_file: painting4.jpg
+    x: 2000 # - 2100 = 100
+    y: 150
+    width: 390 #mm
+    height: 390 #mm
+  - image_file: painting5.jpg
+    x: 2490 # - 2600 = 110
+    y: 150
+    width: 480 #mm
+    height: 390 #mm           
+
+bank_params:
+  - id: detail
+    values:
+      - value: 1 #P1_D1
+        spots: 
+          - {x: 10, y: 200}
+          - {x: 420, y: 200}
+          - {x: 170, y: 450}
+          - {x: 420, y: 450}          
+      - value: 2 #P1_D2
+        spots: 
+          - {x: 280, y: 320}
+
+
+      - value: 3 #P2_D1
+        spots: 
+          - {x: 640, y: 500}
+      - value: 4 #P2_D2        
+        spots: 
+          - {x: 690, y: 300}
+      - value: 6 #P2_D4
+        spots: 
+          - {x: 790, y: 300}
+      - value: 5 #P2_D3        
+        spots: 
+          - {x: 940, y: 300}                    
+
+
+      # - value: 7 #P3_D1
+      #   spots: 
+      #     - {x: 1130, y: 300}
+      - value: 9 #P3_D3
+        spots: 
+          - {x: 1530, y: 300}
+      - value: 8 #P3_D2
+        spots: 
+          - {x: 1230, y: 300}          
+          - {x: 1780, y: 300}
+
+
+      - value: 10 #P4_D1
+        spots: 
+          - {x: 2225, y: 270}
+      - value: 11 #P4_D1
+        spots: 
+          - {x: 2200, y: 375}
+      # - value: 12 #P4_D1
+      #   spots: 
+      #     - {x: 2050, y: 200}
+      #     - {x: 2325, y: 480}
+
+
+      - value: 13 #P5_D1
+        spots: 
+          - {x: 2570, y: 210}
+          - {x: 2890, y: 225}
+          - {x: 2890, y: 475}
+          - {x: 2570, y: 475}
+      # - value: 14 #P5_D1
+      #   spots: 
+      #     - {x: 2590, y: 300}             
+      - value: 15 #P5_D1
+        spots: 
+          - {x: 2730, y: 330}             
