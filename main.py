@@ -6,10 +6,14 @@ import sound
 import display
 import lidar
 
-pos_queue = asyncio.Queue()
+pos_queue = None
 
 
 async def configure():
+    global pos_queue
+
+    pos_queue = asyncio.Queue()
+
     with open("config.yaml") as f:
         config_dict = yaml.load(f, yaml.Loader)
     conf = config.Config.model_validate(config_dict)
