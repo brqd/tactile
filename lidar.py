@@ -7,7 +7,7 @@ import time
 import serial_asyncio
 
 import config
-import display
+import state
 
 class LidarProtocol(asyncio.Protocol):
     def __init__(self, x_min, y_min, x_max, y_max, max_intensity):
@@ -41,6 +41,45 @@ class LidarProtocol(asyncio.Protocol):
         print('Lidar port opened', transport)
 
 
+    def process_data(self, buffer):
+
+        speed, start = struct.unpack('<HH', self.buffer[0:4])
+        data = np.zeros((self.length,2))
+        for i in range(self.length):
+            tmp = struct.unpack('<HB', self.buffer[4+i*3 : 4+i*3+3]) 
+            data[i,:] = tmp              
+        stop, timestamp = struct.unpack('<HH', self.buffer[4+self.length*3 : 4+self.length*3+4]) # seems this model have no checksum
+
+        for (dist, intensity), angle in zip(data, np.linspace(m.pi*start/18000, m.pi*stop/18000, num=self.length)):
+
+            # filter big distance change - usually caused by lidar glitches
+            if self.last_dist is None or abs(self.last_dist - dist) < self.max_distance:
+                self.last_dist = dist
+            else:
+                self.last_dist = None
+                break
+            
+            # process only points in intensity and distance limit
+            if (
+                0 < intensity < self.max_intensity
+                and self.min_distance < dist < self.max_distance
+            ):
+                y = -dist*m.cos(angle) # marker up
+                x = dist*m.sin(angle)
+                # process only points in given area with given resolution
+                if (
+                    self.x_min < x < self.x_max
+                    and self.y_min < y < self.y_max
+                    and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
+                ):
+                    self.last_pos = (x,y)
+                    try:
+                        self.queue.put_nowait((x,y))
+                    except asyncio.QueueFull:
+                        ...
+
+
+
     def data_received(self, recv_data: bytes):           
         for c in recv_data:  
             try:         
@@ -54,47 +93,14 @@ class LidarProtocol(asyncio.Protocol):
                     self.state = 'DATA'
                 elif self.state == 'DATA':
                     if len(self.buffer) == self.length * 3 + 8:
-                        speed, start = struct.unpack('<HH', self.buffer[0:4])
-                        data = np.zeros((self.length,2))
-                        for i in range(self.length):
-                            tmp = struct.unpack('<HB', self.buffer[4+i*3 : 4+i*3+3]) 
-                            data[i,:] = tmp              
-                        # stop, timestamp, sum = struct.unpack('<HHB', self.buffer[4+self.length*3 : 4+self.length*3+5])
-                        stop, timestamp = struct.unpack('<HH', self.buffer[4+self.length*3 : 4+self.length*3+4]) # seems this model have no checksum
+                        self.process_data(self.buffer)
                         self.buffer = b''
                         self.state = 'IDLE'
-
-                        for (dist, intensity), angle in zip(data, np.linspace(m.pi*start/18000, m.pi*stop/18000, num=self.length)):
-
-                            # filter big distance change - usually caused by lidar glichest
-                            if self.last_dist is None or abs(self.last_dist - dist) < self.max_distance:
-                                self.last_dist = dist
-                            else:
-                                self.last_dist = None
-                                break
-                            
-                            # process only points in intensity and distance limit
-                            if (
-                                0 < intensity < self.max_intensity
-                                and self.min_distance < dist < self.max_distance
-                            ):
-                                y = -dist*m.cos(angle) # marker up
-                                x = dist*m.sin(angle)
-                                # process only points in given area with given resolution
-                                if (
-                                    self.x_min < x < self.x_max
-                                    and self.y_min < y < self.y_max
-                                    and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
-                                ):
-                                    self.last_pos = (x,y)
-                                    try:
-                                        self.queue.put_nowait((x,y))
-                                    except asyncio.QueueFull:
-                                        ...
                     else:
                         self.buffer += c.to_bytes(1, 'little')
             except Exception as e:
                 print(e)
+
 
     async def read(self):
         points = [await self.queue.get()]
@@ -119,100 +125,44 @@ class LidarProtocol(asyncio.Protocol):
         self.transport.resume_reading()
 
 
-_protocol = None
-_transport = None
-_pos_queue = None
-_lidar_pos = (0,0)
-_display_points: display.Points = None
-
-async def configure(conf: config.Config, queue: asyncio.Queue, points: display.Points = None ):
-    global _transport, _protocol, _pos_queue, _lidar_pos, _display_points
-
-    _display_points = points
-    _pos_queue = queue
-    _lidar_pos = (conf.lidar.x, conf.lidar.y)
-
-    loop = asyncio.get_running_loop()
-    _transport, _protocol = await serial_asyncio.create_serial_connection(
-        loop,
-        lambda: LidarProtocol(
-            -conf.lidar.x,
-            -conf.lidar.y,
-            conf.area_width-conf.lidar.x,
-            conf.area_height-conf.lidar.y,
-            350),
-        conf.lidar.port,
-        baudrate=230400
-    )                
 
 
-_pos = (0,0)
-_last_pos = (0,0)
-_sensitivity = 10 # mm
+class Lidar():
+    _protocol = None
+    _transport = None
+    _pos_queue = None
+    _lidar_pos = (0,0)
 
-_points_size = 50
-_points = [(0,0)] * _points_size
-_point_index = 0
+    areas_rects = np.empty((0,4))
 
+    def __init__(self, conf: config.Config, state: state.State ):
 
-def add_point(pos):    
-    global _points, _point_index
-    _points[_point_index] = pos
-    _point_index += 1
-    if _point_index == _points_size:
-        _point_index = 0
+        self._state = state
+        self._lidar = conf.lidar
+        self._area = conf.area
 
-def get_points() -> list[tuple[float, float]]:
-    return _points
+    async def run(self):
 
-async def run():
-    global _pos, _last_pos
-    
-    try:
-        while True:
-            current_point = await _protocol.read()
-            current_point = [(_lidar_pos[0] + point[0], _lidar_pos[1] + point [1]) for point in current_point]
+        loop = asyncio.get_running_loop()
+        _transport, _protocol = await serial_asyncio.create_serial_connection(
+            loop,
+            lambda: LidarProtocol(
+                -self._lidar.x,
+                -self._lidar.y,
+                self._area.w-self._lidar.x,
+                self._area.h-self._lidar.x,
+                350),
+            self._lidar.port,
+            baudrate=230400
+        )              
+        
+        try:
+            while True:
+                current_points = await _protocol.read()
+                current_points = [(self._lidar.x + point[0], self._lidar.y + point [1]) for point in current_points]
 
-            for point in current_point:
-                add_point(point)
-                # drawing
-                if _display_points is not None:
-                    _display_points.add_point(point, (255,0,0))                 
+                for point in current_points:
+                    self._state.add_point(point)
 
-            points = get_points() # all
-
-            # finding middle of hand
-            mean = np.mean(points,0)
-            std = np.std(points,0)
-
-            # filter outsiders
-            points = filter(lambda p: all(abs(mean-p) <= 3*std), points )
-            points = list(points)
-
-            # finding middle of hand again
-            mean = np.mean(points,0)
-            std = np.std(points,0)
-
-            if _display_points is not None:
-                    for point in points:
-                        _display_points.add_point(point, (0,255,0))
-            
-            # finding end of hand            
-            A = np.vstack([[p[1] for p in points], np.ones(len(points))]).T
-            B = [p[0] for p in points]
-            a,b = np.linalg.lstsq(A, B, rcond=None)[0]
-            new_y = mean[1]-2*std[1]
-            _pos = (a*new_y+b, new_y)
-
-            # detecting change
-            if abs(_pos[0]-_last_pos[0]) > _sensitivity or abs(_pos[1]-_last_pos[1]) > _sensitivity:
-                try:
-                    _pos_queue.put_nowait(_pos)
-                    _last_pos = _pos
-                except asyncio.QueueFull:
-                    ...
-    finally:
-        _transport.close()
-
-def update(pos: tuple[float,float]):
-    ...
+        finally:
+            _transport.close()

@@ -1,14 +1,16 @@
 from pydantic import BaseModel, Field
 
 
-class Spot(BaseModel):
+class Rect(BaseModel):
     x: int
     y: int
+    w: int
+    h: int
     
 
 class Value(BaseModel):
     value: float
-    spots: list[Spot]
+    rect: Rect
 
 
 class Param(BaseModel):
@@ -20,13 +22,17 @@ class Painting(BaseModel):
     image_file: str
     x: float
     y: float
-    width: float
-    height: float
+    w: float
+    h: float
 
 class Lidar(BaseModel):
     port: str
     x: int
     y: int
+
+class Area(BaseModel):
+    w: float
+    h: float
 
 
 class Config(BaseModel):
@@ -35,10 +41,16 @@ class Config(BaseModel):
     fmod_event: str
     bank_params: list[Param]
     display_scale: float
-    area_width: float
-    area_height: float
-    paintings: list[Painting]
+    area: Area
     lidar: Lidar      
+    paintings: list[Painting]
+
+    display: bool = True
+    display_paintings: bool = False
+    display_points: bool = True    
+    display_areas: bool = True 
+    
+    
 
 
 

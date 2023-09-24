@@ -1,64 +1,42 @@
 import asyncio
 import traceback
-import config
 import yaml
-import sound
-import display
-import lidar
+import numpy as np
 
-pos_queue = None
+import config
+from state import State
+from sound import Sound
+from display import Display
+from lidar import Lidar
 
 
-async def configure():
-    global pos_queue
-
-    pos_queue = asyncio.Queue()
+  
+async def main():
 
     with open("config.yaml") as f:
         config_dict = yaml.load(f, yaml.Loader)
     conf = config.Config.model_validate(config_dict)
-    await sound.configure(conf)
-    await display.configure(conf, pos_queue)
-    await lidar.configure(conf, pos_queue, display.points)
 
+    state = State(conf)
+    lidar = Lidar(conf, state)
+    display = Display(conf, state)
+    sound = Sound(conf, state)
 
-async def dispatch_pos():
-    try:
-        while True:
-            pos: tuple[float, float] = await pos_queue.get()
-            sound.update(pos)
-            display.update(pos)
-
-    except asyncio.exceptions.CancelledError as e:
-        print(f"dispatch_pos cancelled")
-    except Exception as e:
-        print(f"dispatch_pos exception {str(e)}")   
-
-
-async def main():
-
-    await configure()
-
-    tasks = [
+    tasks: list[asyncio.Task] = [
         asyncio.create_task(display.run()),
         asyncio.create_task(sound.run()),
         asyncio.create_task(lidar.run()),
-        asyncio.create_task(dispatch_pos())
     ]
-
     try:
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in pending:
+            task.cancel()
+        for task in done:
+            task.result()        
     except asyncio.exceptions.CancelledError as e:
         print(f"quit!") 
     except Exception as e:
         traceback.print_exception(type(e), e, e.__traceback__)
-
-    for task in tasks:
-        if task.done():
-            try:
-                task.result()
-            except Exception as e:
-                traceback.print_exception(type(e), e, e.__traceback__)
     
 
 if __name__ == "__main__":

@@ -3,8 +3,9 @@ import asyncio
 import threading
 import time
 import pygame
-import config
 
+import state
+import config
 
 disp: 'Display' = None
 
@@ -23,7 +24,7 @@ class DisplayObject:
         ...              
 
 
-class Background(DisplayObject):
+class BackgroundObj(DisplayObject):
     def __init__(self, disp: 'Display'):
         self.game: 'Display' = disp
 
@@ -36,7 +37,7 @@ class Background(DisplayObject):
     async def handle_event(self, event):
         ...
 
-class Picture(DisplayObject):
+class PictureObj(DisplayObject):
     def __init__(self, disp: 'Display', image_name: str, x:int, y: int, width: int, height: int):
         self.obj = pygame.image.load(image_name)
         self.obj = pygame.transform.scale(self.obj, (int(width), int(height)))        
@@ -72,7 +73,35 @@ class Spot(DisplayObject):
     async def handle_event(self, event):
         ...        
 
-class Hand(DisplayObject):
+class AreasObj(DisplayObject):
+
+    def __init__(self, game: 'Display', display_scale: float, st: state.State):
+        self._game = game
+        self._state = st
+        self._display_scale = display_scale
+
+    async def update(self):
+        ...
+
+    async def draw(self, screen: pygame.Surface):
+        for area in self._state._areas:
+            if area == self._state.current_area:
+                color = (255,255,255)
+            else:
+                color = (0,0,128)
+            rect = pygame.Rect(
+                area.rect.x * self._display_scale,
+                area.rect.y * self._display_scale,
+                area.rect.w * self._display_scale,
+                area.rect.h * self._display_scale
+            )
+            pygame.draw.rect(screen, color, rect, 2)
+
+    async def handle_event(self, event):
+        ...
+
+
+class HandObj(DisplayObject):
     def __init__(self, game: 'Display', image_name: str, width: int, height: int):
         self.obj = pygame.image.load(image_name)
         self.obj = pygame.transform.scale(self.obj, (int(width), int(height)))
@@ -80,24 +109,23 @@ class Hand(DisplayObject):
         self.game = game
 
     async def update(self):
-        self.rect.x = self.game.hand_pos[0] - self.rect.width // 2
-        self.rect.y = self.game.hand_pos[1] - self.rect.height // 2
+        ...
 
 
     async def draw(self, screen: pygame.Surface):
         screen.blit(self.obj, self.rect)
 
     async def handle_event(self, event):
-        ...                   
+        ...                      
 
 
-class Points(DisplayObject):
-    def __init__(self, game: 'Display', display_scale):
+class PointsObj(DisplayObject):
+    def __init__(self, game: 'Display', display_scale: float, st: state.State):
+
+        self._state = st
         self.game = game
         self.point_size = 500       
         self.point_index = 0
-        self.points: list[tuple(int, int)] = [(0,0)] * self.point_size
-        self.colors:  list[tuple(int, int, int)] = [(0,0,0)] * self.point_size
         self._display_scale = display_scale
 
     async def update(self):
@@ -105,8 +133,14 @@ class Points(DisplayObject):
 
 
     async def draw(self, screen: pygame.Surface):
-        for point, color in zip(self.points, self.colors):
-            pygame.display.get_surface().set_at((int(point[0]),int(point[1])), color)
+        for point in self._state.get_points():
+            pygame.display.get_surface().set_at(
+                (
+                    int(point.pos[0] * self._display_scale),
+                    int(point.pos[1] * self._display_scale)
+                ),
+                point.color
+            )
 
     async def handle_event(self, event):
         ...   
@@ -124,16 +158,38 @@ class Points(DisplayObject):
 
 class Display:
 
-    def __init__(self, width, height, scale, pos_queue: asyncio.Queue):
+    def __init__(self, conf: config.Config, st: state.State):
+
         self._FPS = 100
-        self._width = width * scale
-        self._height = height * scale
-        self._scale = scale
+        self._state = st
+        self._scale = conf.display_scale
+        self._width = conf.area.w * self._scale
+        self._height =  conf.area.h * self._scale
         self._screen: pygame.Surface = None        
         self._event_queue = asyncio.Queue()
-        self._objects: list[DisplayObject] = []
-        self._pos_queue = pos_queue
-        self.hand_pos = (0,0)        
+        self._objects: list[DisplayObject] = [] 
+
+        self.add_object(BackgroundObj(self))
+
+        if conf.display_paintings:
+            for painting in conf.paintings:
+                self.add_object(PictureObj(
+                    self,
+                    painting.image_file,
+                    painting.x * conf.display_scale,
+                    painting.y * conf.display_scale,
+                    painting.w * conf.display_scale,
+                    painting.h * conf.display_scale            
+                ))
+
+        if conf.display_areas:
+            areas_obj = AreasObj(self, conf.display_scale, self._state)
+            self.add_object(areas_obj)
+
+        if conf.display_points:
+            points_obj = PointsObj(self, conf.display_scale, self._state) 
+            self.add_object(points_obj)
+       
 
     @property
     def width(self):
@@ -164,16 +220,22 @@ class Display:
         event_task = asyncio.create_task(self.event_coroutine())
         
         try:
-            await asyncio.wait([draw_task, event_task], return_when=asyncio.FIRST_COMPLETED)
+            done,pending = await asyncio.wait([draw_task, event_task], return_when=asyncio.FIRST_COMPLETED)
+            for task in pending:
+                task.cancel()
+            for task in done:
+                task.result()
         except asyncio.exceptions.CancelledError as e:
-            print(f"quit game") 
-        except Exception as e:
-            print(f"Exception {e}")
+            print(f"quit") 
 
         stop.set()
         event_loop_thread.join()
         draw_task.cancel()
-        event_task.cancel()             
+        event_task.cancel()     
+
+
+    def close(self):
+        pygame.event.post(pygame.event.Event(pygame.QUIT, {}))
 
 
     def event_loop(
@@ -185,7 +247,7 @@ class Display:
         ):
         pygame.init() 
         try:
-            pygame.display.set_caption("pygame+asyncio")
+            pygame.display.set_caption("Tactile")
             self._screen = pygame.display.set_mode((int(self.width), int(self.height))) # screen have to be created in the thread where events are collected
             ready.set()
             while not stop.is_set():          
@@ -193,7 +255,9 @@ class Display:
                 # if event.type != pygame.NOEVENT:
                 #     asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
                 event = pygame.event.wait() # check stop once a 0.1s
-                asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)                
+                asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
+                if event.type == pygame.QUIT:
+                    break
         finally:
             pygame.quit()
 
@@ -213,7 +277,8 @@ class Display:
         except asyncio.exceptions.CancelledError as e:
             print(f"draw_coroutine cancelled")
         except Exception as e:
-            print(f"draw_coroutine exception {str(e)}")            
+            print(f"draw_coroutine exception {str(e)}")
+            raise
 
 
     async def event_coroutine(self):
@@ -224,7 +289,7 @@ class Display:
                     break
                 elif event.type == pygame.MOUSEMOTION:
                     pos = event.dict['pos']                    
-                    await self._pos_queue.put((pos[0]/self._scale, pos[1]/self._scale))
+                    self._state.add_point((pos[0]/self._scale, pos[1]/self._scale))
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     pos = event.dict['pos']                    
                     print(f"{pos[0]/self._scale}, {pos[1]/self._scale}")
@@ -236,45 +301,10 @@ class Display:
         except asyncio.exceptions.CancelledError as e:
             print(f"event_coroutine cancelled")
         except Exception as e:
-            print(f"event_coroutine exception {str(e)}")              
+            print(f"event_coroutine exception {str(e)}")
+            raise
 
 
     def add_object(self, obj: DisplayObject):
         self._objects.append(obj)
 
-    def update(self, pos):
-        self.hand_pos = (pos[0]*self._scale, pos[1]*self._scale)
-
-points = None
-
-async def configure(conf: config.Config, queue: asyncio.Queue):
-    global disp, points, _display_scale
-
-    disp = Display(conf.area_width, conf.area_height, conf.display_scale, queue)
-    disp.add_object(Background(disp))
-    # for painting in conf.paintings:
-    #     disp.add_object(Picture(
-    #         disp,
-    #         painting.image_file,
-    #         painting.x * conf.display_scale,
-    #         painting.y * conf.display_scale,
-    #         painting.width * conf.display_scale,
-    #         painting.height * conf.display_scale            
-    #     ))
-    for param in conf.bank_params:
-        for value in param.values:
-            for spot in value.spots:
-                disp.add_object(Spot(
-                    disp,
-                    spot.x * conf.display_scale,
-                    spot.y * conf.display_scale
-                ))       
-    disp.add_object(Hand(disp, 'hand.png', 200*conf.display_scale, 200*conf.display_scale))
-    points = Points(disp, conf.display_scale) 
-    disp.add_object(points)    
-
-async def run():
-    await disp.run()
-
-def update(pos: tuple[float,float]):
-    disp.update(pos)

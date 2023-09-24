@@ -1,0 +1,8 @@
+
+state
+
+display <- state.areas
+
+sound <- state.areas
+
+lidar <- state.areas
