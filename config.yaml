@@ -3,14 +3,21 @@ bank_string_file: music/Master.strings.bank
 fmod_event: /move_hand
 display_scale: 0.6 #pixel/mm
 
+display_paintings: true
+display_points:  true    
+display_areas: true 
+
 area:
   w: 3070 #mm
   h: 700 #mm
 
 lidar:
   port: COM5
-  x: 1535
-  y: -100
+  # x: 1535
+  # y: -100
+
+  x: 3000
+  y: -100  
 
 paintings:
   - image_file: images/painting1.jpg
@@ -76,6 +83,6 @@ bank_params:
 
       # painting 5
       - value: 13 #P5_D1
-        rect: {x: 2490, y: 150, w: 390, h: 390}             
+        rect: {x: 2490, y: 150, w: 480, h: 390}             
       - value: 15 #P5_D1
-        rect: {x: 2635, y: 295, w: 100, h: 100}             
+        rect: {x: 2640, y: 245, w: 200, h: 200}             

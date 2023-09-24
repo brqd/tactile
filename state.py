@@ -20,7 +20,7 @@ class Point(pydantic.BaseModel):
 
 class State:
 
-    _points_count = 100 # fixed by now
+    _points_count = 1000 # fixed by now
     _points_index = 0
     _points_areas = None
     _current_area: Area = None
