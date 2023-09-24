@@ -30,6 +30,6 @@ class Sound:
                 param_value = self._state.current_area.param_value
                 self._fmod_instance.set_parameter_by_name(param_id, param_value)
                 self._fmod_system.update()
-                await asyncio.sleep(100)
+                await asyncio.sleep(1)
         finally:
             self._fmod_system.release() 

@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -42,10 +43,13 @@ class Config(BaseModel):
     bank_params: list[Param]
     display_scale: float
     area: Area
-    lidar: Lidar      
+    lidar: Lidar
     paintings: list[Painting]
 
-    display: bool = True
+    enable_display: bool = True
+    enable_lidar: bool = True
+    enable_sound: bool = True
+
     display_paintings: bool = False
     display_points: bool = True    
     display_areas: bool = True 

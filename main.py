@@ -5,10 +5,6 @@ import numpy as np
 
 import config
 from state import State
-from sound import Sound
-from display import Display
-from lidar import Lidar
-
 
   
 async def main():
@@ -18,15 +14,22 @@ async def main():
     conf = config.Config.model_validate(config_dict)
 
     state = State(conf)
-    lidar = Lidar(conf, state)
-    display = Display(conf, state)
-    sound = Sound(conf, state)
 
-    tasks: list[asyncio.Task] = [
-        asyncio.create_task(display.run()),
-        asyncio.create_task(sound.run()),
-        asyncio.create_task(lidar.run()),
-    ]
+    tasks: list[asyncio.Task] = []
+
+    if conf.enable_lidar:
+        from lidar import Lidar
+        lidar = Lidar(conf, state)
+        tasks.append(asyncio.create_task(lidar.run()))
+    if conf.enable_display:
+        from display import Display
+        display = Display(conf, state)
+        tasks.append(asyncio.create_task(display.run()))
+    if conf.enable_sound:
+        from sound import Sound
+        sound = Sound(conf, state)
+        tasks.append(asyncio.create_task(sound.run()))
+
     try:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in pending:
