@@ -67,16 +67,16 @@ class LidarProtocol(asyncio.Protocol):
                 y = -dist*m.cos(angle) # marker up
                 x = dist*m.sin(angle)
                 # process only points in given area with given resolution
-                # if (
-                #     self.x_min < x < self.x_max
-                #     and self.y_min < y < self.y_max
-                #     and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
-                # ):
-                self.last_pos = (x,y)
-                try:
-                    self.queue.put_nowait((x,y))
-                except asyncio.QueueFull:
-                    ...
+                if (
+                    self.x_min < x < self.x_max
+                    and self.y_min < y < self.y_max
+                    and not all(np.isclose((x,y), self.last_pos, atol=self.resolution))
+                ):
+                    self.last_pos = (x,y)
+                    try:
+                        self.queue.put_nowait((x,y))
+                    except asyncio.QueueFull:
+                        ...
 
 
 
