@@ -85,7 +85,7 @@ class AreasObj(DisplayObject):
 
     async def draw(self, screen: pygame.Surface):
         for area in self._state._areas:
-            if area == self._state.current_area:
+            if area == self._state.get_current_area():
                 color = (255,255,255)
             else:
                 color = (0,0,128)

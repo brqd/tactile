@@ -73,8 +73,7 @@ class State:
         self._points_areas = np.ones((len(self._points), len(self._areas)), dtype=bool)
 
 
-    @property
-    def current_area(self):
+    def get_current_area(self):
         if not self._current_area_valid:                
             # calculate current area if neede
             areas_count = np.sum(self._points_areas,0)

@@ -26,8 +26,9 @@ class Sound:
     async def run(self):
         try:
             while True:
-                param_id = self._state.current_area.param_id
-                param_value = self._state.current_area.param_value
+                current_area = self._state.get_current_area()
+                param_id = current_area.param_id
+                param_value = current_area.param_value
                 self._fmod_instance.set_parameter_by_name(param_id, param_value)
                 self._fmod_system.update()
                 await asyncio.sleep(1)
