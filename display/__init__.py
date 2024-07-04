@@ -5,7 +5,7 @@ import time
 import pygame
 
 import state
-import config
+from models import painting_file
 
 disp: 'Display' = None
 
@@ -158,10 +158,10 @@ class PointsObj(DisplayObject):
 
 class Display:
 
-    def __init__(self, conf: config.Config, st: state.State):
+    def configure(self, conf: painting_file.PaintingFile):
 
         self._FPS = 100
-        self._state = st
+        self._state = state.app_state
         self._scale = conf.display_scale
         self._width = conf.area.w * self._scale
         self._height =  conf.area.h * self._scale
@@ -308,3 +308,5 @@ class Display:
     def add_object(self, obj: DisplayObject):
         self._objects.append(obj)
 
+
+app_display = Display()

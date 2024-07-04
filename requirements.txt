@@ -3,6 +3,6 @@
  pyfmodex >= 0.7.0
  pydantic >= 2.1.1
  PyYAML >= 6.0.1
- numpy == 1.19.5
+ numpy
  pyserial == 3.5b0
  pyserial-asyncio >= 0.6

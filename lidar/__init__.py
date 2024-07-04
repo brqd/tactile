@@ -6,7 +6,7 @@ import numpy as np
 import time
 import serial_asyncio
 
-import config
+import models
 import state
 
 class LidarProtocol(asyncio.Protocol):
@@ -135,11 +135,12 @@ class Lidar():
 
     areas_rects = np.empty((0,4))
 
-    def __init__(self, conf: config.Config, state: state.State ):
+    def configure(self, conf: models.ConfigFile, conf_painting: models.PaintingFile):
 
-        self._state = state
-        self._lidar = conf.lidar
-        self._area = conf.area
+        self._state = state.app_state
+        self._lidar = conf_painting.lidar
+        self._area = conf_painting.area
+        self._serial = conf.lidar_config.serial
 
     async def run(self):
 
@@ -152,7 +153,7 @@ class Lidar():
                 self._area.w-self._lidar.x,
                 self._area.h-self._lidar.x,
                 350),
-            self._lidar.port,
+            self._serial,
             baudrate=230400
         )              
         
@@ -166,3 +167,6 @@ class Lidar():
 
         finally:
             _transport.close()
+
+
+app_lidar = Lidar()
