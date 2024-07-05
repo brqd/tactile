@@ -1,18 +1,18 @@
-enable_display: false
+enable_display: true
 enable_lidar: true
 enable_sound: true
 enable_api: true
 
-picture_path: pictures/2024
+picture_conf: pictures/2024/painting1.yaml
 
-lidar_config:
+lidar:
   serial: COM5
 
-api_config:
+api:
   port: 8080
 
-display_config:  
-  display_paintings: true
-  display_points:  true    
-  display_areas: true 
-  display_scale: 0.6 #pixel/mm
+display:  
+  show_paintings: true
+  show_points:  true    
+  show_areas: true 
+  scale: 0.6 #pixel/mm

@@ -5,6 +5,7 @@ from . import common
 class LidarConfig(BaseModel):
     x: int
     y: int
+    angle: int = 0
 
 
 class AreaConfig(BaseModel):

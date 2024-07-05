@@ -1,11 +1,12 @@
 from abc import abstractmethod
+import os
 import asyncio
 import threading
 import time
 import pygame
 
 import state
-from models import painting_file
+import models
 
 disp: 'Display' = None
 
@@ -75,10 +76,10 @@ class Spot(DisplayObject):
 
 class AreasObj(DisplayObject):
 
-    def __init__(self, game: 'Display', display_scale: float, st: state.State):
+    def __init__(self, game: 'Display', scale: float, st: state.State):
         self._game = game
         self._state = st
-        self._display_scale = display_scale
+        self._scale = scale
 
     async def update(self):
         ...
@@ -90,10 +91,10 @@ class AreasObj(DisplayObject):
             else:
                 color = (0,0,128)
             rect = pygame.Rect(
-                area.rect.x * self._display_scale,
-                area.rect.y * self._display_scale,
-                area.rect.w * self._display_scale,
-                area.rect.h * self._display_scale
+                area.rect.x * self._scale,
+                area.rect.y * self._scale,
+                area.rect.w * self._scale,
+                area.rect.h * self._scale
             )
             pygame.draw.rect(screen, color, rect, 2)
 
@@ -120,13 +121,13 @@ class HandObj(DisplayObject):
 
 
 class PointsObj(DisplayObject):
-    def __init__(self, game: 'Display', display_scale: float, st: state.State):
+    def __init__(self, game: 'Display', scale: float, st: state.State):
 
         self._state = st
         self.game = game
         self.point_size = 500       
         self.point_index = 0
-        self._display_scale = display_scale
+        self._scale = scale
 
     async def update(self):
         ...
@@ -136,8 +137,8 @@ class PointsObj(DisplayObject):
         for point in self._state.get_points():
             pygame.display.get_surface().set_at(
                 (
-                    int(point.pos[0] * self._display_scale),
-                    int(point.pos[1] * self._display_scale)
+                    int(point.pos[0] * self._scale),
+                    int(point.pos[1] * self._scale)
                 ),
                 point.color
             )
@@ -146,7 +147,7 @@ class PointsObj(DisplayObject):
         ...   
 
     def add_point(self, pos, color = (255,255,255)):
-        scaled_pos = (int(pos[0]*self._display_scale), int(pos[1]*self._display_scale))
+        scaled_pos = (int(pos[0]*self._scale), int(pos[1]*self._scale))
         self.points[self.point_index] = scaled_pos
         self.colors[self.point_index] = color
         self.point_index += 1
@@ -158,36 +159,36 @@ class PointsObj(DisplayObject):
 
 class Display:
 
-    def configure(self, conf: painting_file.PaintingFile):
+    def configure(self, conf: models.ConfigFile, painting_conf: models.PaintingFile):
 
         self._FPS = 100
         self._state = state.app_state
-        self._scale = conf.display_scale
-        self._width = conf.area.w * self._scale
-        self._height =  conf.area.h * self._scale
+        self._scale = conf.display.scale
+        self._width = painting_conf.area.w * self._scale
+        self._height =  painting_conf.area.h * self._scale
         self._screen: pygame.Surface = None        
         self._event_queue = asyncio.Queue()
         self._objects: list[DisplayObject] = [] 
 
         self.add_object(BackgroundObj(self))
 
-        if conf.display_paintings:
-            for painting in conf.paintings:
+        if conf.display.show_paintings:
+            for painting in painting_conf.paintings:
                 self.add_object(PictureObj(
                     self,
-                    painting.image_file,
-                    painting.x * conf.display_scale,
-                    painting.y * conf.display_scale,
-                    painting.w * conf.display_scale,
-                    painting.h * conf.display_scale            
+                    os.path.join(state.picture_path, painting.image_file),
+                    painting.x * conf.display.scale,
+                    painting.y * conf.display.scale,
+                    painting.w * conf.display.scale,
+                    painting.h * conf.display.scale            
                 ))
 
-        if conf.display_areas:
-            areas_obj = AreasObj(self, conf.display_scale, self._state)
+        if conf.display.show_areas:
+            areas_obj = AreasObj(self, conf.display.scale, self._state)
             self.add_object(areas_obj)
 
-        if conf.display_points:
-            points_obj = PointsObj(self, conf.display_scale, self._state) 
+        if conf.display.show_points:
+            points_obj = PointsObj(self, conf.display.scale, self._state) 
             self.add_object(points_obj)
        
 
@@ -226,12 +227,13 @@ class Display:
             for task in done:
                 task.result()
         except asyncio.exceptions.CancelledError as e:
-            print(f"quit") 
+            print(f"display canceled") 
 
         stop.set()
         event_loop_thread.join()
         draw_task.cancel()
-        event_task.cancel()     
+        event_task.cancel()
+        print(f"display closed") 
 
 
     def close(self):
@@ -251,11 +253,11 @@ class Display:
             self._screen = pygame.display.set_mode((int(self.width), int(self.height))) # screen have to be created in the thread where events are collected
             ready.set()
             while not stop.is_set():          
-                # event = pygame.event.wait(100) # check stop once a 0.1s
-                # if event.type != pygame.NOEVENT:
-                #     asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
-                event = pygame.event.wait() # check stop once a 0.1s
-                asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
+                event = pygame.event.wait(100) # check stop once a 0.1s
+                if event.type != pygame.NOEVENT:
+                    asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
+                # event = pygame.event.wait() # check stop once a 0.1s
+                # asyncio.run_coroutine_threadsafe(event_queue.put(event), loop=loop)
                 if event.type == pygame.QUIT:
                     break
         finally:

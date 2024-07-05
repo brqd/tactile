@@ -10,10 +10,10 @@ class ApiConfig(BaseModel):
 
 
 class DisplayConfig(BaseModel):
-    display_scale: float
-    display_paintings: bool = False
-    display_points: bool = True    
-    display_areas: bool = True 
+    scale: float
+    show_paintings: bool = False
+    show_points: bool = True    
+    show_areas: bool = True 
 
 
 class ConfigFile(BaseModel):
@@ -23,11 +23,11 @@ class ConfigFile(BaseModel):
     enable_sound: bool = True
     enable_api: bool = True    
 
-    picture_path: str
+    picture_conf: str
 
-    lidar_config: LidarConfig
-    api_config: ApiConfig
-    display_config: DisplayConfig
+    lidar: LidarConfig
+    api: ApiConfig
+    display: DisplayConfig
 
 
 

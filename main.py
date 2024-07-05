@@ -17,9 +17,11 @@ async def main():
         config_dict = yaml.load(f, yaml.Loader)
     conf = models.ConfigFile.model_validate(config_dict)
 
-    state.picture_path = os.path.abspath(conf.picture_path)
+    state.picture_conf = os.path.abspath(conf.picture_conf)
+    state.picture_path = os.path.dirname(os.path.abspath(conf.picture_conf))
+    state.app_path = os.path.dirname(__file__)
 
-    with open(os.path.join(state.picture_path, "painting.yaml")) as f:
+    with open(state.picture_conf) as f:
         painting_dict = yaml.load(f, yaml.Loader)
     painting = models.PaintingFile.model_validate(painting_dict)    
 
@@ -35,7 +37,7 @@ async def main():
         tasks.append(asyncio.create_task(app_lidar.run()))
     if conf.enable_display:
         from display import app_display
-        app_display.configure(painting)
+        app_display.configure(conf, painting)
         tasks.append(asyncio.create_task(app_display.run()))
     if conf.enable_sound:
         from sound import app_sound
@@ -48,12 +50,15 @@ async def main():
 
     try:
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in pending:
+        for task in tasks:
             task.cancel()
         for task in done:
-            task.result()        
+            task.result() 
+        print("the end")       
     except asyncio.exceptions.CancelledError as e:
-        print(f"quit!") 
+        print(f"application canceled") 
+        for task in tasks:
+            task.cancel()
     except Exception as e:
         traceback.print_exception(type(e), e, e.__traceback__)
     

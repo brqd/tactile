@@ -9,8 +9,10 @@ import serial_asyncio
 import models
 import state
 
+min_distance = 50
+
 class LidarProtocol(asyncio.Protocol):
-    def __init__(self, x_min, y_min, x_max, y_max, max_intensity):
+    def __init__(self, x_min, y_min, x_max, y_max, max_intensity, angle):
 
         super().__init__()
         self.queue = asyncio.Queue(100)
@@ -18,8 +20,9 @@ class LidarProtocol(asyncio.Protocol):
         self.y_min = y_min
         self.x_max = x_max
         self.y_max = y_max
+        self.angle = angle * 100
         self.max_intensity = max_intensity
-        self.min_distance = 400
+        self.min_distance = min_distance
         self.max_distance = max(
             m.sqrt( (x_min)**2 + (y_min)**2 ),
             m.sqrt( (x_max)**2 + (y_min)**2 ),
@@ -50,7 +53,14 @@ class LidarProtocol(asyncio.Protocol):
             data[i,:] = tmp              
         stop, timestamp = struct.unpack('<HH', self.buffer[4+self.length*3 : 4+self.length*3+4]) # seems this model have no checksum
 
-        for (dist, intensity), angle in zip(data, np.linspace(m.pi*start/18000, m.pi*stop/18000, num=self.length)):
+        for (dist, intensity), angle in zip(
+            data,
+            np.linspace(
+                m.pi*(start+self.angle)/18000,
+                m.pi*(stop+self.angle)/18000,
+                num=self.length
+            )
+        ):
 
             # filter big distance change - usually caused by lidar glitches
             if self.last_dist is None or abs(self.last_dist - dist) < self.max_distance:
@@ -140,7 +150,7 @@ class Lidar():
         self._state = state.app_state
         self._lidar = conf_painting.lidar
         self._area = conf_painting.area
-        self._serial = conf.lidar_config.serial
+        self._serial = conf.lidar.serial
 
     async def run(self):
 
@@ -152,7 +162,8 @@ class Lidar():
                 -self._lidar.y,
                 self._area.w-self._lidar.x,
                 self._area.h-self._lidar.x,
-                350),
+                350,
+                self._lidar.angle),
             self._serial,
             baudrate=230400
         )              
@@ -165,8 +176,12 @@ class Lidar():
                 for point in current_points:
                     self._state.add_point(point)
 
+        except asyncio.CancelledError:
+            print(f"lidar canceled")
+
         finally:
             _transport.close()
+            print(f"lidar closed") 
 
 
 app_lidar = Lidar()
