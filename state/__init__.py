@@ -11,7 +11,7 @@ picture_path = ""
 
 points_count = 100
 clean_points_time = 1 # s
-area_sensitivity = 50 # minimal number of points to activate area
+area_sensitivity = 30 # minimal number of points to activate area
 
 class State:
 
