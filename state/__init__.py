@@ -10,7 +10,8 @@ picture_conf = ""
 picture_path = ""
 
 points_count = 100
-clean_points_time = 5 # s
+clean_points_time = 1 # s
+area_sensitivity = 50 # minimal number of points to activate area
 
 class State:
 
@@ -24,17 +25,20 @@ class State:
         self._areas_limits: np.ndarray = np.zeros((0,4))
         self._areas_sizes: np.ndarray = np.zeros((0,1))
         self._areas: list[models.Area] = [] 
+        self._area_sensitivity = area_sensitivity
         self._last_point_time = time.time()
 
         # filling up points
         self._points: list[models.Point] = []
-        self._points_array: np.array = np.zeros((0,2))
+        self._points_times: np.array = np.zeros(self._points_count)
+        # self._points_array: np.array = np.zeros((0,2))
         for i in range(self._points_count):
             self._points.append(models.Point(pos=(0,0), color=(0,0,0)))
-            self._points_array = np.vstack([
-                self._points_array,
-                [0,0]
-            ])
+            # self._points_array = np.vstack([
+            #     self._points_array,
+            #     [0,0]
+            # ])
+            
         self._points_areas = None
 
 
@@ -68,15 +72,19 @@ class State:
 
 
     def get_current_area(self) -> models.Area | None:
-        if self._last_point_time + clean_points_time < time.time():
-            return None
         
+        # filter out old point
+        points_areas = self._points_areas[self._points_times + clean_points_time > time.time(), :]
+
         if not self._current_area_valid:                
-            # calculate current area if neede
-            areas_count = np.sum(self._points_areas,0)
+            # calculate current area if needed
+            areas_count = np.sum(points_areas,0)
             area_index = np.argmax(areas_count.T / self._areas_sizes.T) 
-            self._current_area = self._areas[area_index]
-            self._current_area_valid = True
+            if areas_count[area_index] > self._area_sensitivity:
+                self._current_area = self._areas[area_index]
+                self._current_area_valid = True
+            else:
+                return None
 
         return self._current_area
     
@@ -110,6 +118,9 @@ class State:
             # points for display        
             self._points[self._points_index] = models.Point(pos=pos, color=color) 
 
+            # point times for filter
+            self._points_times[self._points_index] = time.time()
+
             # find areas the point belong to
             p = pos
             a = self._areas_limits
@@ -117,8 +128,6 @@ class State:
 
             # invalidate current area for lazy calculation
             self._current_area_valid = False
-
-            self._last_point_time = time.time()
 
 
 app_state = State()

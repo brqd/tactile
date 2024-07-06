@@ -18,7 +18,7 @@ paintings:
 music:
   bank_file: music/Master.bank
   bank_string_file: music/Master.strings.bank
-  fmod_event: /picture1
+  fmod_event: /picture2
 
 
   bank_params:
@@ -27,10 +27,5 @@ music:
         - value: 0  #None
           rect: {x: 0, y: 0 , w: 500, h: 700}
         - value: 1 #P1_D1
-          rect: {x: 40, y: 100, w: 140, h: 200}
-        - value: 1 #P1_D1
-          rect: {x: 180, y: 100, w: 140, h: 150}          
-        - value: 2 #P1_D1
-          rect: {x: 180, y: 300, w: 140, h: 350}
-        - value: 3 #P2_D1
-          rect: {x: 320, y: 100, w: 140, h: 200}
+          rect: {x: 100, y: 100, w: 300, h: 500}
+

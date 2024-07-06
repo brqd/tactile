@@ -15,4 +15,4 @@ display:
   show_paintings: true
   show_points:  true    
   show_areas: true 
-  scale: 0.6 #pixel/mm
+  scale: 1 #pixel/mm

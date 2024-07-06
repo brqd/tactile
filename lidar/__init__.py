@@ -24,13 +24,12 @@ class LidarProtocol(asyncio.Protocol):
         self.max_intensity = max_intensity
         self.min_intensity = min_intensity
         self.min_distance = min_distance
-        # self.max_distance = max(
-        #     m.sqrt( (x_min)**2 + (y_min)**2 ),
-        #     m.sqrt( (x_max)**2 + (y_min)**2 ),
-        #     m.sqrt( (x_max)**2 + (y_max)**2 ),
-        #     m.sqrt( (x_min)**2 + (y_max)**2 )
-        # ) 
-        self.max_distance = m.sqrt( (x_max-x_min)**2 + (y_max-y_min)**2 )
+        self.max_distance = max(
+            m.sqrt( (x_min)**2 + (y_min)**2 ),
+            m.sqrt( (x_max)**2 + (y_min)**2 ),
+            m.sqrt( (x_max)**2 + (y_max)**2 ),
+            m.sqrt( (x_min)**2 + (y_max)**2 )
+        ) 
         print(f"x_min: {x_min} y_min: {y_min} x_max: {x_max} y_max: {y_max} max_distance: {self.max_distance}")
         self.last_pos = (0,0)
         self.last_dist = None
@@ -164,8 +163,8 @@ class Lidar():
                 -self._lidar.y,
                 self._area.w-self._lidar.x,
                 self._area.h-self._lidar.y,
-                30,
-                350,
+                220,
+                500,
                 self._lidar.angle),
             self._serial,
             baudrate=230400
