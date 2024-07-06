@@ -16,7 +16,7 @@ class AppApi(fastapi.FastAPI):
     async def run(self):
         # uvicorn.run(self)
 
-        config = uvicorn.Config(self, port=18000, lifespan="on")
+        config = uvicorn.Config(self, host="0.0.0.0", port=18000, lifespan="on")
         server = uvicorn.Server(config=config)
         try:
             await(server.serve())

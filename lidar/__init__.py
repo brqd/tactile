@@ -12,7 +12,7 @@ import state
 min_distance = 50
 
 class LidarProtocol(asyncio.Protocol):
-    def __init__(self, x_min, y_min, x_max, y_max, max_intensity, angle):
+    def __init__(self, x_min, y_min, x_max, y_max, min_intensity, max_intensity, angle):
 
         super().__init__()
         self.queue = asyncio.Queue(100)
@@ -22,16 +22,18 @@ class LidarProtocol(asyncio.Protocol):
         self.y_max = y_max
         self.angle = angle * 100
         self.max_intensity = max_intensity
+        self.min_intensity = min_intensity
         self.min_distance = min_distance
-        self.max_distance = max(
-            m.sqrt( (x_min)**2 + (y_min)**2 ),
-            m.sqrt( (x_max)**2 + (y_min)**2 ),
-            m.sqrt( (x_max)**2 + (y_max)**2 ),
-            m.sqrt( (x_min)**2 + (y_max)**2 )
-        ) 
+        # self.max_distance = max(
+        #     m.sqrt( (x_min)**2 + (y_min)**2 ),
+        #     m.sqrt( (x_max)**2 + (y_min)**2 ),
+        #     m.sqrt( (x_max)**2 + (y_max)**2 ),
+        #     m.sqrt( (x_min)**2 + (y_max)**2 )
+        # ) 
+        self.max_distance = m.sqrt( (x_max-x_min)**2 + (y_max-y_min)**2 )
+        print(f"x_min: {x_min} y_min: {y_min} x_max: {x_max} y_max: {y_max} max_distance: {self.max_distance}")
         self.last_pos = (0,0)
         self.last_dist = None
-        self.limit_dist = 100
         self.resolution = 5
         
 
@@ -71,7 +73,7 @@ class LidarProtocol(asyncio.Protocol):
             
             # process only points in intensity and distance limit
             if (
-                0 < intensity < self.max_intensity
+                self.min_intensity < intensity < self.max_intensity
                 and self.min_distance < dist < self.max_distance
             ):
                 y = -dist*m.cos(angle) # marker up
@@ -161,7 +163,8 @@ class Lidar():
                 -self._lidar.x,
                 -self._lidar.y,
                 self._area.w-self._lidar.x,
-                self._area.h-self._lidar.x,
+                self._area.h-self._lidar.y,
+                30,
                 350,
                 self._lidar.angle),
             self._serial,
