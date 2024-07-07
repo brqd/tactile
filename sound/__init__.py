@@ -49,8 +49,7 @@ class Sound:
                         current_area.param_id,
                         current_area.param_value
                     )
-                    self._fmod_system.update()
-                    # print(f"music updated { current_area.param_id} {current_area.param_value}")                    
+                    self._fmod_system.update()                    
 
                 await asyncio.sleep(1)
                 

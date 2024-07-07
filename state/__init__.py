@@ -10,8 +10,9 @@ picture_conf = ""
 picture_path = ""
 
 points_count = 100
-clean_points_time = 1 # s
-area_sensitivity = 30 # minimal number of points to activate area
+clean_points_period = 1 # seconds until points are considered as invalid (too old)
+validation_period = 1 # seconde until area is considered as invalid and have to be recalculated
+area_sensitivity = 5 # minimal number of valid points to activate area
 
 class State:
 
@@ -21,12 +22,14 @@ class State:
         self._points_count = points_count # fix by now
         self._points_index = 0        
         self._current_area: models.Area | None = None
-        self._current_area_valid: bool = True
+        self._validation_time: float | None = time.time()
+        self._clean_points_period: float = clean_points_period
+        self._validation_period: float = validation_period
+
         self._areas_limits: np.ndarray = np.zeros((0,4))
         self._areas_sizes: np.ndarray = np.zeros((0,1))
         self._areas: list[models.Area] = [] 
         self._area_sensitivity = area_sensitivity
-        self._last_point_time = time.time()
 
         # filling up points
         self._points: list[models.Point] = []
@@ -72,19 +75,24 @@ class State:
 
 
     def get_current_area(self) -> models.Area | None:
-        
-        # filter out old point
-        points_areas = self._points_areas[self._points_times + clean_points_time > time.time(), :]
+    
 
-        if not self._current_area_valid:                
+        if self._validation_time is None or self._validation_time + self._validation_period < time.time():                
+
+            self._validation_time = time.time()
+
+            # print(f"{np.max(self._points_times)-np.min(self._points_times)}\t{time.time() - np.min(self._points_times)}")
+
+            # filter out old point
+            points_areas = self._points_areas[self._points_times + self._clean_points_period > time.time(), :]                       
+
             # calculate current area if needed
             areas_count = np.sum(points_areas,0)
             area_index = np.argmax(areas_count.T / self._areas_sizes.T) 
             if areas_count[area_index] > self._area_sensitivity:
                 self._current_area = self._areas[area_index]
-                self._current_area_valid = True
             else:
-                return None
+                self._current_area = None
 
         return self._current_area
     
@@ -127,7 +135,7 @@ class State:
             self._points_areas[self._points_index] = (a[:,0] < p[0]) & (p[0] < a[:,2]) & (a[:,1] < p[1]) & (p[1] < a[:,3])
 
             # invalidate current area for lazy calculation
-            self._current_area_valid = False
+            self._validation_time = None
 
 
 app_state = State()
