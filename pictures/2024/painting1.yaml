@@ -29,8 +29,10 @@ music:
         - value: 1 #P1_D1
           rect: {x: 80, y: 100, w: 100, h: 300}
         - value: 1 #P1_D1
-          rect: {x: 180, y: 100, w: 100, h: 150}
+          rect: {x: 180, y: 100, w: 100, h: 120}
         # - value: 2 #P1_D1
         #   rect: {x: 180, y: 250, w: 130, h: 350}
         - value: 3 #P2_D1
-          rect: {x: 280, y: 100, w: 140, h: 450}
+          rect: {x: 180, y: 220, w: 200, h: 180}
+        - value: 3
+          rect: {x: 140, y: 400, w: 150, h: 150}
