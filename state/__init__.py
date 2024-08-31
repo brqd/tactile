@@ -10,7 +10,7 @@ picture_conf = ""
 picture_path = ""
 
 points_count = 60
-clean_points_period = 1 # seconds until points are considered as invalid (too old)
+clean_points_period = 0.5 # seconds until points are considered as invalid (too old)
 validation_period = 1 # seconde until area is considered as invalid and have to be recalculated
 area_sensitivity = 10 # minimal number of valid points to activate area
 
