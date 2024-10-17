@@ -1,0 +1,31 @@
+lidar:
+  x: 250
+  y: -60
+  angle: -90
+
+area:
+  w: 500 #mm
+  h: 700 #mm
+
+paintings:
+  - image_file: images/painting1.jpg
+    x: 0
+    y: 0
+    w: 500
+    h: 700
+
+
+music:
+  bank_file: music/Master.bank
+  bank_string_file: music/Master.strings.bank
+  fmod_event: /picture2
+
+
+  bank_params:
+    - id: detail
+      values:
+        - value: 0  #None
+          rect: {x: 0, y: 0 , w: 500, h: 700}
+        - value: 1 #P1_D1
+          rect: {x: 100, y: 100, w: 300, h: 500}
+

@@ -3,7 +3,7 @@ enable_lidar: true
 enable_sound: true
 enable_api: true
 
-picture_conf: pictures/2024/painting1.yaml
+picture_conf: pictures/2024_1/painting1.yaml
 
 lidar:
   serial: /dev/serial0
