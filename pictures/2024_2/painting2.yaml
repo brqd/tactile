@@ -31,7 +31,7 @@ music:
 
 
   bank_params:
-    - id: detail
+    - id: area
       values:
         - value: 0  #None
           rect: {x: 0, y: 0 , w: 400, h: 600}

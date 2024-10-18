@@ -1,8 +1,11 @@
- # fixed packages for debian/raspios     11.7
- pygame
- pyfmodex >= 0.7.0
- pydantic >= 2.1.1
- PyYAML >= 6.0.1
- numpy
- pyserial == 3.5b0
- pyserial-asyncio >= 0.6
+# fixed packages for debian/raspios     11.7
+# sudo apt install python3-numpy 
+pygame
+pyfmodex >= 0.7.0
+pydantic >= 2.1.1
+PyYAML >= 6.0.1
+pyserial == 3.5b0
+pyserial-asyncio >= 0.6
+fastapi
+uvicorn
+python-multipart
