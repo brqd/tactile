@@ -1,4 +1,7 @@
 import asyncio
+import uvloop
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+
 import traceback
 import yaml
 import numpy as np
@@ -7,6 +10,7 @@ import os
 import models
 import state
 from state import app_state
+
 
   
 async def main():

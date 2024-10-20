@@ -34,6 +34,8 @@ class LidarProtocol(asyncio.Protocol):
         self.last_pos = (0,0)
         self.last_dist = None
         self.resolution = 5
+        self.interleave = 3
+        self.interleave_sequence = 0
         
 
     def connection_made(self, transport):
@@ -91,7 +93,12 @@ class LidarProtocol(asyncio.Protocol):
 
 
 
-    def data_received(self, recv_data: bytes):           
+    def data_received(self, recv_data: bytes):         
+        # print(self.interleave, len(recv_data))  
+        if len(recv_data) > 50:
+            self.interleave += 1
+        else:
+            self.interleave = max(1,self.interleave-1)
         for c in recv_data:  
             try:         
                 if self.state == 'IDLE':
@@ -104,7 +111,10 @@ class LidarProtocol(asyncio.Protocol):
                     self.state = 'DATA'
                 elif self.state == 'DATA':
                     if len(self.buffer) == self.length * 3 + 8:
-                        self.process_data(self.buffer)
+                        if self.interleave_sequence >= self.interleave:
+                            self.process_data(self.buffer)
+                            self.interleave_sequence = 0
+                        self.interleave_sequence += 1
                         self.buffer = b''
                         self.state = 'IDLE'
                     else:
