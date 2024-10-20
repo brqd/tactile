@@ -1,4 +1,4 @@
-enable_display: false
+enable_display: true
 enable_lidar: true
 enable_sound: true
 enable_api: false
@@ -6,13 +6,13 @@ enable_api: false
 picture_conf: pictures/2024_2/painting1.yaml
 
 lidar:
-  serial: /dev/serial0
+  serial: COM4
 
 api:
   port: 8080
 
 display:  
-  show_paintings: true
+  show_paintings: false
   show_points:  true    
   show_areas: true 
   scale: 1 #pixel/mm

@@ -1,7 +1,7 @@
 lidar:
   x: 700
   y: 700
-  angle: 90
+  angle: -90
 
 area:
   w: 1360 #mm
@@ -27,14 +27,14 @@ paintings:
 music:
   bank_file: music/Master.bank
   bank_string_file: music/Master.strings.bank
-  fmod_event: /picture1
+  fmod_event: /picture2
 
 
   bank_params:
     - id: area
       values:
         - value: 0  #None
-          rect: {x: 0, y: 0 , w: 400, h: 600}
+          rect: {x: 0, y: 0, w: 1360, h: 600}
         - value: 1
           rect: {x: 0, y: 0, w: 400, h: 600}
         - value: 2 

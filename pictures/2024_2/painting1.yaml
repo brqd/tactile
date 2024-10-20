@@ -1,7 +1,7 @@
 lidar:
   x: 700
   y: 700
-  angle: 90
+  angle: -90
 
 area:
   w: 1360 #mm
@@ -34,7 +34,7 @@ music:
     - id: area
       values:
         - value: 0  #None
-          rect: {x: 0, y: 0 , w: 400, h: 600}
+          rect: {x: 0, y: 0, w: 1360, h: 600}
         - value: 1
           rect: {x: 0, y: 0, w: 400, h: 600}
         - value: 2 

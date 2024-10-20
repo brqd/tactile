@@ -88,6 +88,7 @@ class State:
 
             # calculate current area if needed
             areas_count = np.sum(points_areas,0)
+            print(areas_count)
             area_index = np.argmax(areas_count.T / self._areas_sizes.T) 
             if areas_count[area_index] > self._area_sensitivity:
                 self._current_area = self._areas[area_index]
