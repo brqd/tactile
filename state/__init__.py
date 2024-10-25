@@ -9,10 +9,10 @@ app_path = ""
 picture_conf = ""
 picture_path = ""
 
-points_count = 80
-clean_points_period = 0.5 # seconds until points are considered as invalid (too old)
+points_count = 100
+clean_points_period = 1 # seconds until points are considered as invalid (too old)
 validation_period = 1 # seconde until area is considered as invalid and have to be recalculated
-area_sensitivity = 5 # minimal number of valid points to activate area
+area_sensitivity = 2 # minimal number of valid points to activate area
 
 class State:
 
