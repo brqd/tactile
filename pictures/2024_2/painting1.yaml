@@ -27,7 +27,7 @@ paintings:
 music:
   bank_file: music/Master.bank
   bank_string_file: music/Master.strings.bank
-  fmod_event: /picture2
+  fmod_event: /picture1
 
 
   bank_params:
